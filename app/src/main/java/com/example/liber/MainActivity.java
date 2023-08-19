@@ -9,8 +9,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Patterns;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -27,6 +30,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -42,14 +46,16 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     EditText urlinput;
+    Boolean searchreq;
     TextView link, liber;
 
     ScrollView scroll;
     LinearLayout layout;
-    LinearLayout linearLayout;
-    ImageView clearUrl, webBack, webForward, webRefresh, webShare;
+    ImageView clearUrl, webBack, webForward, webRefresh, webShare, google;
     WebView webView;
     ProgressBar progressBar;
+    String prev_value;
+    RelativeLayout url_field;
 
 
 
@@ -62,9 +68,10 @@ public class MainActivity extends AppCompatActivity {
         LayoutInflater vi = (LayoutInflater) getApplicationContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
         scroll = findViewById(R.id.scrollik);
-        link = getLayoutInflater().inflate(R.layout.link, null).findViewById(R.id.name);
+        searchreq = Boolean.FALSE;
         urlinput = findViewById(R.id.url_input);
         clearUrl = findViewById(R.id.clear_icon);
+        google = findViewById(R.id.googleView);
         progressBar = findViewById(R.id.progress_bar);
         webView = findViewById(R.id.web_view);
         webBack = findViewById(R.id.web_back);
@@ -72,7 +79,8 @@ public class MainActivity extends AppCompatActivity {
         webRefresh = findViewById(R.id.web_refresh);
         webShare = findViewById(R.id.web_share);
         layout = findViewById(R.id.link_arr);
-        liber = findViewById(R.id.liber);
+
+
 
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -89,7 +97,22 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        urlinput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                prev_value = charSequence.toString().trim();
+            }
 
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
         urlinput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
@@ -99,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                     webView.setVisibility(View.INVISIBLE);
                     scroll.setVisibility(View.VISIBLE);
                     layout.removeAllViews();
-                    liber.setVisibility(View.VISIBLE);
+//                    liber.setVisibility(View.VISIBLE);
                     try {
                         loadMyUrl(urlinput.getText().toString());
                     } catch (IOException e) {
@@ -111,7 +134,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
+        google.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (layout.getChildCount() > 0) {
+                    if (scroll.getVisibility() == View.INVISIBLE ) {
+                        scroll.setVisibility(View.VISIBLE);
+                        webView.setVisibility(View.INVISIBLE);
+                    } else {
+                        scroll.setVisibility(View.INVISIBLE);
+                        webView.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
+        });
 
         clearUrl.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -122,10 +158,13 @@ public class MainActivity extends AppCompatActivity {
 
         webBack.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View view)  {
                 if (webView.canGoBack()) {
                     webView.goBack();
-                    urlinput.setTextColor(111);
+                } else {
+                    webView.setVisibility(View.INVISIBLE);
+                    scroll.setVisibility(View.VISIBLE);
+                    urlinput.setText(prev_value);
                 }
             }
         });
@@ -162,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
     void loadMyUrl(String url) throws IOException {
         boolean matchUrl = Patterns.WEB_URL.matcher(url).matches();
         if (matchUrl) {
+            searchreq = Boolean.FALSE;
+            scroll.setVisibility(View.INVISIBLE);
+            webView.setVisibility(View.VISIBLE);
             webView.loadUrl(url);
 
         } else {
@@ -182,16 +224,11 @@ public class MainActivity extends AppCompatActivity {
         int c = 0;
         ArrayList<String> arr = new ArrayList<String>();
 
-
-
-
-
         for (Element result : results) {
             // Extract the title and link of the result
             String title = result.select("h3").text();
-            String link = result.select(".yuRUbf > a").attr("href");
+            String link = result.select(".yuRUbf > div > a").attr("href");
             String snippet = result.select(".VwiC3b").text();
-
             arr.add(link);
 
 
@@ -201,13 +238,19 @@ public class MainActivity extends AppCompatActivity {
 //            textLink.setHeight(100);
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 //            params.setMargins(0, 0, 0, 50);
-            textLink.setTextColor(Color.parseColor("#0000ff"));
+            textLink.setTypeface(Typeface.DEFAULT_BOLD);
+            textLink.setTextColor(Color.parseColor("#363636"));
+
             textLink.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     webView.setVisibility(View.VISIBLE);
                     scroll.setVisibility(View.INVISIBLE);
-                    liber.setVisibility(View.INVISIBLE);
+//                    liber.setVisibility(View.INVISIBLE);
+
+//                    liber.setEnabled(false);
+
+
                     webView.loadUrl(link);
 
                 }
@@ -216,6 +259,7 @@ public class MainActivity extends AppCompatActivity {
 
             TextView snippetLink = new TextView(this);
             snippetLink.setText(snippet);
+            snippetLink.setTextColor(Color.parseColor("#696969"));
             LinearLayout.LayoutParams snippetParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
             snippetParams.setMargins(0, 0, 0, 50);
             layout.addView(snippetLink, snippetParams);
